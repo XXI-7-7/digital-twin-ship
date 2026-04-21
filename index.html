@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>数字孪生船舶</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        #hint {
+            position: absolute;
+            bottom: 16px;
+            right: 20px;
+            color: rgba(220, 240, 255, 0.5);
+            background: rgba(0, 0, 0, 0.15);
+            padding: 4px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            backdrop-filter: blur(4px);
+            z-index: 15;
+            pointer-events: none;
+        }
+        #loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #0a1a2a;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            transition: opacity 1s;
+            pointer-events: none;
+            color: white;
+            flex-direction: column;
+        }
+        .loader {
+            border: 3px solid rgba(255,255,255,0.2);
+            border-top: 3px solid #00a8ff;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 15px;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .hidden { opacity: 0; pointer-events: none; }
+    </style>
+</head>
+<body>
+    <div id="hint">变换视角 鼠标拖动/滚轮 </div>
+    <div id="loading-overlay">
+        <div class="loader"></div>
+        <div>正在加载船舶模型...</div>
+    </div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.128.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.128.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
+        import { MTLLoader } from 'three/addons/loaders/MTLLoader.js';
+        import { Water } from 'three/addons/objects/Water.js';
+
+        // --- 初始化场景 ---
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x071e2b);
+        scene.fog = new THREE.FogExp2(0x071e2b, 0.0032);
+
+        const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(18, 10, 26);
+        camera.lookAt(0, 1.2, 0);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.1;
+        document.body.appendChild(renderer.domElement);
+
+        // 轨道控制器
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.autoRotate = false;
+        controls.enableZoom = true;
+        controls.target.set(0, 1.2, 0);
+        controls.maxPolarAngle = Math.PI / 2.3;
+
+        // --- 光照 ---
+        scene.add(new THREE.AmbientLight(0x404c66, 0.5));
+        
+        const sunLight = new THREE.DirectionalLight(0xfff5d1, 1.3);
+        sunLight.position.set(28, 38, 18);
+        sunLight.castShadow = true;
+        sunLight.receiveShadow = true;
+        sunLight.shadow.mapSize.width = 2048;
+        sunLight.shadow.mapSize.height = 2048;
+        const d = 35;
+        sunLight.shadow.camera.left = -d;
+        sunLight.shadow.camera.right = d;
+        sunLight.shadow.camera.top = d;
+        sunLight.shadow.camera.bottom = -d;
+        sunLight.shadow.camera.near = 1;
+        sunLight.shadow.camera.far = 80;
+        sunLight.shadow.bias = -0.0005;
+        scene.add(sunLight);
+        
+        const fillLight1 = new THREE.PointLight(0x6a8aad, 0.6);
+        fillLight1.position.set(-12, 16, 22);
+        scene.add(fillLight1);
+        const fillLight2 = new THREE.PointLight(0x9bb7d4, 0.45);
+        fillLight2.position.set(18, 10, -28);
+        scene.add(fillLight2);
+
+        // --- 动态水面 ---
+        const waterWidth = 140;
+        const waterHeight = 140;
+        const waterGeometry = new THREE.PlaneGeometry(waterWidth, waterHeight, 128, 128);
+        
+        const textureLoader = new THREE.TextureLoader();
+        const waterNormals = textureLoader.load('https://threejs.org/examples/textures/water/Water_1_M_Normal.jpg');
+        waterNormals.wrapS = waterNormals.wrapT = THREE.RepeatWrapping;
+        
+        const water = new Water(waterGeometry, {
+            textureWidth: 1024,
+            textureHeight: 1024,
+            waterNormals: waterNormals,
+            sunDirection: new THREE.Vector3(0.5, 0.8, 0.3).normalize(),
+            sunColor: 0xfff5d1,
+            waterColor: 0x1a4d6b,
+            distortionScale: 3.5,
+            fog: scene.fog !== undefined,
+            alpha: 0.96,
+            side: THREE.DoubleSide
+        });
+        
+        water.rotation.x = -Math.PI / 2;
+        water.position.y = 0;
+        water.receiveShadow = true;
+        scene.add(water);
+
+        // --- 船舶容器 ---
+        const shipGroup = new THREE.Group();
+        scene.add(shipGroup);
+        
+        let shipData = {
+            baseY: 0,
+            draft: 0
+        };
+
+        const loadingOverlay = document.getElementById('loading-overlay');
+
+        // 控制台输出即可，不在页面上显示文字
+        function logToConsole(message, isError = false) {
+            if (isError) {
+                console.error(message);
+            } else {
+                console.log(message);
+            }
+        }
+
+        // --- 波浪函数 ---
+        function getWaveHeight(x, z, time) {
+            const freq1 = 0.22;
+            const freq2 = 0.35;
+            const h1 = Math.sin(x * freq1 + time * 1.6) * Math.cos(z * 0.28 + time * 1.1);
+            const h2 = Math.sin(x * 0.45 + time * 1.8) * 0.4;
+            const h3 = Math.cos(z * 0.4 + time * 1.4) * 0.25;
+            return (h1 * 0.6 + h2 * 0.25 + h3 * 0.15) * 0.22;
+        }
+        
+        function getWaveSlope(x, z, time) {
+            const delta = 0.5;
+            const hx = getWaveHeight(x + delta, z, time) - getWaveHeight(x - delta, z, time);
+            const hz = getWaveHeight(x, z + delta, time) - getWaveHeight(x, z - delta, time);
+            return { dx: hx / (2*delta), dz: hz / (2*delta) };
+        }
+
+        // --- 加载模型 (错误仅输出到控制台) ---
+        function loadShipModel() {
+            const objPath = './ship.obj';
+            const mtlPath = './ship.mtl';
+            
+            logToConsole('⏳ 正在加载模型...');
+            
+            const mtlLoader = new MTLLoader();
+            mtlLoader.setResourcePath('./');
+            
+            mtlLoader.load(mtlPath, 
+                (materials) => {
+                    logToConsole('🎨 MTL 加载成功');
+                    materials.preload();
+                    const objLoader = new OBJLoader();
+                    objLoader.setMaterials(materials);
+                    objLoader.load(objPath, 
+                        (object) => {
+                            processModel(object);
+                            logToConsole('✅ 模型加载成功 (含材质)');
+                        },
+                        (xhr) => {
+                            // 进度不再显示
+                        },
+                        (error) => {
+                            console.warn('OBJ加载失败:', error);
+                            fallbackLoadObj();
+                        }
+                    );
+                },
+                (xhr) => {
+                    // 进度忽略
+                },
+                (error) => {
+                    console.warn('MTL加载失败，尝试仅加载OBJ:', error);
+                    fallbackLoadObj();
+                }
+            );
+        }
+        
+        function fallbackLoadObj() {
+            const objLoader = new OBJLoader();
+            objLoader.load('./ship.obj',
+                (object) => {
+                    processModel(object);
+                    logToConsole('✅ 模型加载成功 (无材质)');
+                },
+                (xhr) => {},
+                (error) => {
+                    console.error('OBJ加载彻底失败:', error);
+                    loadingOverlay.classList.add('hidden');
+                }
+            );
+        }
+        
+        function processModel(object) {
+            // 清除旧模型
+            while(shipGroup.children.length) {
+                shipGroup.remove(shipGroup.children[0]);
+            }
+            
+            // 计算包围盒
+            const box = new THREE.Box3().setFromObject(object);
+            const size = box.getSize(new THREE.Vector3());
+            const center = box.getCenter(new THREE.Vector3());
+            const minY = box.min.y;
+            
+            // 自动缩放
+            const maxDim = Math.max(size.x, size.y, size.z);
+            let scale = 1.0;
+            if (maxDim > 18) scale = 10 / maxDim;
+            else if (maxDim < 4) scale = 6 / maxDim;
+            
+            object.scale.set(scale, scale, scale);
+            
+            // 重新计算包围盒
+            object.updateWorldMatrix(true, true);
+            const scaledBox = new THREE.Box3().setFromObject(object);
+            const scaledMinY = scaledBox.min.y;
+            const modelHeight = scaledBox.getSize(new THREE.Vector3()).y;
+            
+            // 吃水深度：模型高度的22%
+            const draftDepth = modelHeight * 0.22;
+            const shipBaseY = -scaledMinY - draftDepth;
+            
+            // 放置模型
+            object.position.x = -center.x * scale;
+            object.position.z = -center.z * scale;
+            object.position.y = 0;
+            
+            // 启用阴影
+            object.traverse((child) => {
+                if (child.isMesh) {
+                    child.castShadow = true;
+                    child.receiveShadow = true;
+                    if (child.material) {
+                        const mats = Array.isArray(child.material) ? child.material : [child.material];
+                        mats.forEach(mat => {
+                            mat.roughness = mat.roughness || 0.5;
+                            mat.metalness = mat.metalness || 0.1;
+                        });
+                    }
+                }
+            });
+            
+            shipGroup.add(object);
+            shipGroup.position.y = shipBaseY;
+            shipGroup.position.x = 0;
+            shipGroup.position.z = 0;
+            
+            shipData.baseY = shipBaseY;
+            shipData.draft = draftDepth;
+            
+            loadingOverlay.classList.add('hidden');
+            logToConsole(`⛵ 船舶已就绪 · 吃水 ${draftDepth.toFixed(2)}`);
+        }
+
+        // 开始加载
+        loadShipModel();
+
+        // --- 动画循环 ---
+        const clock = new THREE.Clock();
+        
+        function animate() {
+            const delta = clock.getDelta();
+            const elapsedTime = performance.now() * 0.001;
+            
+            if (water.material.uniforms) {
+                water.material.uniforms['time'].value = elapsedTime * 1.4;
+            }
+            
+            if (shipGroup.children.length > 0) {
+                const time = elapsedTime * 1.4;
+                const posX = shipGroup.position.x;
+                const posZ = shipGroup.position.z;
+                
+                const waveY = getWaveHeight(posX, posZ, time);
+                const slope = getWaveSlope(posX, posZ, time);
+                
+                shipGroup.position.y = shipData.baseY + waveY;
+                
+                const rollAngle = slope.dz * 0.4;
+                const pitchAngle = -slope.dx * 0.35;
+                
+                const maxRot = 0.08;
+                shipGroup.rotation.x = Math.max(-maxRot, Math.min(maxRot, pitchAngle));
+                shipGroup.rotation.z = Math.max(-maxRot, Math.min(maxRot, rollAngle));
+            }
+            
+            controls.update();
+            renderer.render(scene, camera);
+            requestAnimationFrame(animate);
+        }
+        
+        animate();
+
+        // 窗口自适应
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
