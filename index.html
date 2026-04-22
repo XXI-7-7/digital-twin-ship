@@ -77,8 +77,23 @@
 
         // --- 初始化场景 ---
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x071e2b);
-        scene.fog = new THREE.FogExp2(0x071e2b, 0.0032);
+        
+        // ========== 新增：加载天空盒（使用本地 public/textures/skybox/ 下的 PNG 图片） ==========
+        const cubeTextureLoader = new THREE.CubeTextureLoader();
+        // 设置基础路径，方便统一管理
+        const skyboxPath = './public/textures/skybox/';
+        const skyboxTexture = cubeTextureLoader.load([
+            skyboxPath + 'right.png', // 右 (positive x)
+            skyboxPath + 'left.png', // 左 (negative x)
+            skyboxPath + 'top.png', // 上 (positive y)
+            skyboxPath + 'down.png', // 下 (negative y)
+            skyboxPath + 'back.png', // 前 (positive z)
+            skyboxPath + 'front.png'  // 后 (negative z)
+        ]);
+        scene.background = skyboxTexture;
+        // 调整雾的颜色与天空盒协调（淡蓝灰色），并稍微降低雾的浓度
+        scene.fog = new THREE.FogExp2(0xaaccdd, 0.0025);
+        // ====================================================================================
 
         const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 1000);
         camera.position.set(18, 10, 26);
