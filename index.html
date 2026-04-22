@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>数字孪生船舶</title>
+    <title>数字孪生船舶 · 驾驶</title>
     <style>
         body {
             margin: 0;
@@ -14,11 +14,24 @@
             position: absolute;
             bottom: 16px;
             right: 20px;
-            color: rgba(220, 240, 255, 0.5);
-            background: rgba(0, 0, 0, 0.15);
-            padding: 4px 14px;
+            color: rgba(220, 240, 255, 0.7);
+            background: rgba(0, 0, 0, 0.25);
+            padding: 6px 16px;
             border-radius: 20px;
-            font-size: 13px;
+            font-size: 14px;
+            backdrop-filter: blur(4px);
+            z-index: 15;
+            pointer-events: none;
+        }
+        #controls-hint {
+            position: absolute;
+            bottom: 16px;
+            left: 20px;
+            color: rgba(220, 240, 255, 0.8);
+            background: rgba(0, 0, 0, 0.25);
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 14px;
             backdrop-filter: blur(4px);
             z-index: 15;
             pointer-events: none;
@@ -53,7 +66,8 @@
     </style>
 </head>
 <body>
-    <div id="hint">变换视角 鼠标拖动/滚轮 </div>
+    <div id="hint">🚢 WASD 移动 · 鼠标拖动视角</div>
+    <div id="controls-hint">W前进 S后退 A左转 D右转</div>
     <div id="loading-overlay">
         <div class="loader"></div>
         <div>正在加载船舶模型...</div>
@@ -78,22 +92,19 @@
         // --- 初始化场景 ---
         const scene = new THREE.Scene();
         
-        // ========== 新增：加载天空盒（使用本地 public/textures/skybox/ 下的 PNG 图片） ==========
+        // 天空盒
         const cubeTextureLoader = new THREE.CubeTextureLoader();
-        // 设置基础路径，方便统一管理
         const skyboxPath = './public/textures/skybox/';
         const skyboxTexture = cubeTextureLoader.load([
-            skyboxPath + 'right.png', // 右 (positive x)
-            skyboxPath + 'left.png', // 左 (negative x)
-            skyboxPath + 'top.png', // 上 (positive y)
-            skyboxPath + 'down.png', // 下 (negative y)
-            skyboxPath + 'back.png', // 前 (positive z)
-            skyboxPath + 'front.png'  // 后 (negative z)
+            skyboxPath + 'right.png', 
+            skyboxPath + 'left.png', 
+            skyboxPath + 'top.png', 
+            skyboxPath + 'down.png', 
+            skyboxPath + 'back.png', 
+            skyboxPath + 'front.png'  
         ]);
         scene.background = skyboxTexture;
-        // 调整雾的颜色与天空盒协调（淡蓝灰色），并稍微降低雾的浓度
         scene.fog = new THREE.FogExp2(0xaaccdd, 0.0025);
-        // ====================================================================================
 
         const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 1000);
         camera.position.set(18, 10, 26);
@@ -179,21 +190,33 @@
             draft: 0
         };
 
+        // 船舶运动状态
+        const shipState = {
+            speed: 0,
+            maxSpeed: 8.0,
+            acceleration: 12.0,
+            deceleration: 6.0,
+            turnSpeed: 1.2,
+            angularVelocity: 0,
+            angularDamping: 0.92,
+            heading: 0
+        };
+
+        // 键盘状态
+        const keys = {
+            w: false, a: false, s: false, d: false
+        };
+
         const loadingOverlay = document.getElementById('loading-overlay');
 
-        // 控制台输出即可，不在页面上显示文字
         function logToConsole(message, isError = false) {
-            if (isError) {
-                console.error(message);
-            } else {
-                console.log(message);
-            }
+            if (isError) console.error(message);
+            else console.log(message);
         }
 
         // --- 波浪函数 ---
         function getWaveHeight(x, z, time) {
-            const freq1 = 0.22;
-            const freq2 = 0.35;
+            const freq1 = 0.22, freq2 = 0.35;
             const h1 = Math.sin(x * freq1 + time * 1.6) * Math.cos(z * 0.28 + time * 1.1);
             const h2 = Math.sin(x * 0.45 + time * 1.8) * 0.4;
             const h3 = Math.cos(z * 0.4 + time * 1.4) * 0.25;
@@ -207,7 +230,28 @@
             return { dx: hx / (2*delta), dz: hz / (2*delta) };
         }
 
-        // --- 加载模型 (错误仅输出到控制台) ---
+        // --- 键盘监听 ---
+        window.addEventListener('keydown', (e) => {
+            switch(e.code) {
+                case 'KeyW': keys.w = true; e.preventDefault(); break;
+                case 'KeyS': keys.s = true; e.preventDefault(); break;
+                case 'KeyA': keys.a = true; e.preventDefault(); break;
+                case 'KeyD': keys.d = true; e.preventDefault(); break;
+                default: break;
+            }
+        });
+        window.addEventListener('keyup', (e) => {
+            switch(e.code) {
+                case 'KeyW': keys.w = false; e.preventDefault(); break;
+                case 'KeyS': keys.s = false; e.preventDefault(); break;
+                case 'KeyA': keys.a = false; e.preventDefault(); break;
+                case 'KeyD': keys.d = false; e.preventDefault(); break;
+                default: break;
+            }
+        });
+        window.addEventListener('contextmenu', e => e.preventDefault());
+
+        // --- 加载模型 ---
         function loadShipModel() {
             const objPath = './ship.obj';
             const mtlPath = './ship.mtl';
@@ -219,85 +263,50 @@
             
             mtlLoader.load(mtlPath, 
                 (materials) => {
-                    logToConsole('🎨 MTL 加载成功');
                     materials.preload();
                     const objLoader = new OBJLoader();
                     objLoader.setMaterials(materials);
-                    objLoader.load(objPath, 
-                        (object) => {
-                            processModel(object);
-                            logToConsole('✅ 模型加载成功 (含材质)');
-                        },
-                        (xhr) => {
-                            // 进度不再显示
-                        },
-                        (error) => {
-                            console.warn('OBJ加载失败:', error);
-                            fallbackLoadObj();
-                        }
-                    );
+                    objLoader.load(objPath, processModel, undefined, fallbackLoadObj);
                 },
-                (xhr) => {
-                    // 进度忽略
-                },
-                (error) => {
-                    console.warn('MTL加载失败，尝试仅加载OBJ:', error);
-                    fallbackLoadObj();
-                }
+                undefined,
+                fallbackLoadObj
             );
         }
         
         function fallbackLoadObj() {
             const objLoader = new OBJLoader();
-            objLoader.load('./ship.obj',
-                (object) => {
-                    processModel(object);
-                    logToConsole('✅ 模型加载成功 (无材质)');
-                },
-                (xhr) => {},
-                (error) => {
-                    console.error('OBJ加载彻底失败:', error);
-                    loadingOverlay.classList.add('hidden');
-                }
-            );
+            objLoader.load('./ship.obj', processModel, undefined, (error) => {
+                console.error('OBJ加载彻底失败:', error);
+                loadingOverlay.classList.add('hidden');
+            });
         }
         
         function processModel(object) {
-            // 清除旧模型
-            while(shipGroup.children.length) {
-                shipGroup.remove(shipGroup.children[0]);
-            }
+            while(shipGroup.children.length) shipGroup.remove(shipGroup.children[0]);
             
-            // 计算包围盒
             const box = new THREE.Box3().setFromObject(object);
             const size = box.getSize(new THREE.Vector3());
             const center = box.getCenter(new THREE.Vector3());
             const minY = box.min.y;
             
-            // 自动缩放
             const maxDim = Math.max(size.x, size.y, size.z);
             let scale = 1.0;
             if (maxDim > 18) scale = 10 / maxDim;
             else if (maxDim < 4) scale = 6 / maxDim;
             
             object.scale.set(scale, scale, scale);
-            
-            // 重新计算包围盒
             object.updateWorldMatrix(true, true);
             const scaledBox = new THREE.Box3().setFromObject(object);
             const scaledMinY = scaledBox.min.y;
             const modelHeight = scaledBox.getSize(new THREE.Vector3()).y;
             
-            // 吃水深度：模型高度的22%
             const draftDepth = modelHeight * 0.22;
             const shipBaseY = -scaledMinY - draftDepth;
             
-            // 放置模型
             object.position.x = -center.x * scale;
             object.position.z = -center.z * scale;
             object.position.y = 0;
             
-            // 启用阴影
             object.traverse((child) => {
                 if (child.isMesh) {
                     child.castShadow = true;
@@ -320,23 +329,72 @@
             shipData.baseY = shipBaseY;
             shipData.draft = draftDepth;
             
+            shipState.heading = 0;
+            shipGroup.rotation.y = shipState.heading;
+            
             loadingOverlay.classList.add('hidden');
             logToConsole(`⛵ 船舶已就绪 · 吃水 ${draftDepth.toFixed(2)}`);
         }
 
-        // 开始加载
         loadShipModel();
+
+        // --- 船舶运动更新（已调换 W/S 的推力方向）---
+        function updateShipMovement(deltaTime) {
+            if (!shipGroup.children.length) return;
+            
+            const state = shipState;
+            
+            // 修改点：W 后退（负推力），S 前进（正推力）
+            let thrust = 0;
+            if (keys.w) thrust -= 1;   // 原为 += 1，现改为 -= 1
+            if (keys.s) thrust += 1;   // 原为 -= 1，现改为 += 1
+            
+            if (thrust !== 0) {
+                state.speed += thrust * state.acceleration * deltaTime;
+            } else {
+                if (Math.abs(state.speed) > 0.01) {
+                    state.speed -= Math.sign(state.speed) * state.deceleration * deltaTime;
+                } else {
+                    state.speed = 0;
+                }
+            }
+            state.speed = Math.max(-state.maxSpeed * 0.5, Math.min(state.maxSpeed, state.speed));
+            
+            let turnInput = 0;
+            if (keys.a) turnInput += 1;
+            if (keys.d) turnInput -= 1;
+            
+            if (turnInput !== 0) {
+                state.angularVelocity += turnInput * state.turnSpeed * deltaTime * 1.5;
+            }
+            
+            state.angularVelocity *= state.angularDamping;
+            if (Math.abs(state.angularVelocity) < 0.001) state.angularVelocity = 0;
+            
+            state.heading += state.angularVelocity * deltaTime * 2.5;
+            
+            const moveDir = new THREE.Vector3(Math.sin(state.heading), 0, Math.cos(state.heading));
+            const deltaPos = moveDir.clone().multiplyScalar(state.speed * deltaTime);
+            shipGroup.position.x += deltaPos.x;
+            shipGroup.position.z += deltaPos.z;
+            
+            shipGroup.rotation.y = state.heading;
+            
+            controls.target.copy(shipGroup.position).add(new THREE.Vector3(0, 1.5, 0));
+        }
 
         // --- 动画循环 ---
         const clock = new THREE.Clock();
         
         function animate() {
-            const delta = clock.getDelta();
+            const delta = Math.min(clock.getDelta(), 0.1);
             const elapsedTime = performance.now() * 0.001;
             
             if (water.material.uniforms) {
                 water.material.uniforms['time'].value = elapsedTime * 1.4;
             }
+            
+            updateShipMovement(delta);
             
             if (shipGroup.children.length > 0) {
                 const time = elapsedTime * 1.4;
@@ -363,7 +421,6 @@
         
         animate();
 
-        // 窗口自适应
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
