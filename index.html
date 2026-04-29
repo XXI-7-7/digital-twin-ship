@@ -3,75 +3,148 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>数字孪生船舶 · 驾驶</title>
+    <title>数字孪生船舶 · 无限水面</title>
     <style>
+        :root {
+            --ui-bg: rgba(8, 18, 30, 0.75);
+            --ui-text: rgba(190, 210, 230, 0.85);
+            --accent: #4080b0;
+        }
+
         body {
             margin: 0;
             overflow: hidden;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: #040c16;
+            user-select: none;
+            -webkit-user-select: none;
         }
+
         #hint {
             position: absolute;
             bottom: 16px;
             right: 20px;
-            color: rgba(220, 240, 255, 0.7);
-            background: rgba(0, 0, 0, 0.25);
-            padding: 6px 16px;
-            border-radius: 20px;
-            font-size: 14px;
-            backdrop-filter: blur(4px);
-            z-index: 15;
+            color: var(--ui-text);
+            background: var(--ui-bg);
+            padding: 8px 18px;
+            border-radius: 24px;
+            font-size: 13px;
+            backdrop-filter: blur(12px);
+            z-index: 20;
             pointer-events: none;
+            border: 1px solid rgba(255, 255, 255, 0.06);
         }
+
         #controls-hint {
             position: absolute;
             bottom: 16px;
             left: 20px;
-            color: rgba(220, 240, 255, 0.8);
-            background: rgba(0, 0, 0, 0.25);
-            padding: 6px 16px;
-            border-radius: 20px;
-            font-size: 14px;
-            backdrop-filter: blur(4px);
-            z-index: 15;
+            color: var(--ui-text);
+            background: var(--ui-bg);
+            padding: 8px 18px;
+            border-radius: 24px;
+            font-size: 13px;
+            backdrop-filter: blur(12px);
+            z-index: 20;
             pointer-events: none;
+            border: 1px solid rgba(255, 255, 255, 0.06);
         }
-        #loading-overlay {
+
+        #wave-panel {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: #0a1a2a;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
             display: flex;
-            justify-content: center;
+            gap: 12px;
+            z-index: 20;
+            background: rgba(6, 14, 24, 0.7);
+            padding: 8px 16px;
+            border-radius: 28px;
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(60, 120, 180, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+        }
+
+        .wave-btn {
+            position: relative;
+            padding: 10px 18px;
+            border: none;
+            border-radius: 22px;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 600;
+            letter-spacing: 0.4px;
+            color: #7a9ab8;
+            background: transparent;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+            outline: none;
+            display: flex;
             align-items: center;
-            z-index: 100;
-            transition: opacity 1s;
-            pointer-events: none;
-            color: white;
-            flex-direction: column;
+            gap: 6px;
+            font-family: inherit;
         }
-        .loader {
-            border: 3px solid rgba(255,255,255,0.2);
-            border-top: 3px solid #00a8ff;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            margin-bottom: 15px;
+
+        .wave-btn:hover {
+            background: rgba(255, 255, 255, 0.04);
+            color: #b0cde0;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
         }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .hidden { opacity: 0; pointer-events: none; }
+
+        .wave-btn:active {
+            transform: scale(0.94);
+        }
+
+        .wave-btn.active {
+            background: #143a58;
+            color: #d8ecff;
+            box-shadow: 0 0 18px rgba(40, 120, 180, 0.4), 0 4px 12px rgba(0, 0, 0, 0.4);
+            text-shadow: 0 0 6px rgba(180, 210, 245, 0.4);
+        }
+
+        .wave-btn .icon {
+            font-size: 18px;
+        }
+        .wave-btn .label {
+            font-size: 14px;
+        }
+
+        @media (max-width: 768px) {
+            #wave-panel {
+                gap: 6px;
+                padding: 6px 10px;
+            }
+            .wave-btn {
+                padding: 8px 12px;
+                font-size: 13px;
+                gap: 4px;
+            }
+            .wave-btn .icon {
+                font-size: 15px;
+            }
+            .wave-btn .label {
+                font-size: 11px;
+            }
+            #hint,
+            #controls-hint {
+                font-size: 11px;
+                padding: 6px 12px;
+                bottom: 10px;
+            }
+        }
     </style>
 </head>
 <body>
+    <div id="wave-panel">
+        <button class="wave-btn active" data-level="0"><span class="icon">🫧</span><span class="label">平静</span></button>
+        <button class="wave-btn" data-level="1"><span class="icon">🌊</span><span class="label">有风</span></button>
+        <button class="wave-btn" data-level="2"><span class="icon">⛈️</span><span class="label">大浪</span></button>
+    </div>
+
     <div id="hint">🚢 WASD 移动 · 鼠标拖动视角</div>
     <div id="controls-hint">W前进 S后退 A左转 D右转</div>
-    <div id="loading-overlay">
-        <div class="loader"></div>
-        <div>正在加载船舶模型...</div>
-    </div>
 
     <script type="importmap">
         {
@@ -86,29 +159,15 @@
         import * as THREE from 'three';
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
         import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
-        import { MTLLoader } from 'three/addons/loaders/MTLLoader.js';
-        import { Water } from 'three/addons/objects/Water.js';
 
-        // --- 初始化场景 ---
+        // ────────────────────────────────── 场景初始化 (低亮度) ──────────────────────────────────
         const scene = new THREE.Scene();
-        
-        // 天空盒
-        const cubeTextureLoader = new THREE.CubeTextureLoader();
-        const skyboxPath = './public/textures/skybox/';
-        const skyboxTexture = cubeTextureLoader.load([
-            skyboxPath + 'right.png', 
-            skyboxPath + 'left.png', 
-            skyboxPath + 'top.png', 
-            skyboxPath + 'down.png', 
-            skyboxPath + 'back.png', 
-            skyboxPath + 'front.png'  
-        ]);
-        scene.background = skyboxTexture;
-        scene.fog = new THREE.FogExp2(0xaaccdd, 0.0025);
+        scene.background = new THREE.Color(0x060e1a);
+        scene.fog = new THREE.FogExp2(0x0a1628, 0.005);
 
-        const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.set(18, 10, 26);
-        camera.lookAt(0, 1.2, 0);
+        const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(10, 6, 14);
+        camera.lookAt(0, 1, 0);
 
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
@@ -116,309 +175,510 @@
         renderer.shadowMap.enabled = true;
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = 1.1;
+        renderer.toneMappingExposure = 0.8;
         document.body.appendChild(renderer.domElement);
 
-        // 轨道控制器
         const controls = new OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
         controls.dampingFactor = 0.05;
-        controls.autoRotate = false;
-        controls.enableZoom = true;
-        controls.target.set(0, 1.2, 0);
-        controls.maxPolarAngle = Math.PI / 2.3;
+        controls.maxPolarAngle = Math.PI / 2.2;
+        controls.target.set(0, 1, 0);
+        controls.update();
 
-        // --- 光照 ---
-        scene.add(new THREE.AmbientLight(0x404c66, 0.5));
-        
-        const sunLight = new THREE.DirectionalLight(0xfff5d1, 1.3);
-        sunLight.position.set(28, 38, 18);
-        sunLight.castShadow = true;
-        sunLight.receiveShadow = true;
-        sunLight.shadow.mapSize.width = 2048;
-        sunLight.shadow.mapSize.height = 2048;
-        const d = 35;
-        sunLight.shadow.camera.left = -d;
-        sunLight.shadow.camera.right = d;
-        sunLight.shadow.camera.top = d;
-        sunLight.shadow.camera.bottom = -d;
-        sunLight.shadow.camera.near = 1;
-        sunLight.shadow.camera.far = 80;
-        sunLight.shadow.bias = -0.0005;
-        scene.add(sunLight);
-        
-        const fillLight1 = new THREE.PointLight(0x6a8aad, 0.6);
-        fillLight1.position.set(-12, 16, 22);
-        scene.add(fillLight1);
-        const fillLight2 = new THREE.PointLight(0x9bb7d4, 0.45);
-        fillLight2.position.set(18, 10, -28);
-        scene.add(fillLight2);
+        // ────────────────────────────────── 光照 (整体偏暗) ──────────────────────────────────
+        const ambientLight = new THREE.AmbientLight(0x2a3040, 1.0);
+        scene.add(ambientLight);
 
-        // --- 动态水面 ---
-        const waterWidth = 140;
-        const waterHeight = 140;
-        const waterGeometry = new THREE.PlaneGeometry(waterWidth, waterHeight, 128, 128);
-        
-        const textureLoader = new THREE.TextureLoader();
-        const waterNormals = textureLoader.load('https://threejs.org/examples/textures/water/Water_1_M_Normal.jpg');
-        waterNormals.wrapS = waterNormals.wrapT = THREE.RepeatWrapping;
-        
-        const water = new Water(waterGeometry, {
-            textureWidth: 1024,
-            textureHeight: 1024,
-            waterNormals: waterNormals,
-            sunDirection: new THREE.Vector3(0.5, 0.8, 0.3).normalize(),
-            sunColor: 0xfff5d1,
-            waterColor: 0x1a4d6b,
-            distortionScale: 3.5,
-            fog: scene.fog !== undefined,
-            alpha: 0.96,
-            side: THREE.DoubleSide
-        });
-        
-        water.rotation.x = -Math.PI / 2;
-        water.position.y = 0;
-        water.receiveShadow = true;
-        scene.add(water);
+        const directionalLight = new THREE.DirectionalLight(0xffeedd, 1.0);
+        directionalLight.position.set(4, 10, 3);
+        directionalLight.castShadow = true;
+        directionalLight.receiveShadow = false;
+        directionalLight.shadow.mapSize.width = 1024;
+        directionalLight.shadow.mapSize.height = 1024;
+        directionalLight.shadow.camera.near = 0.5;
+        directionalLight.shadow.camera.far = 25;
+        directionalLight.shadow.camera.left = -6;
+        directionalLight.shadow.camera.right = 6;
+        directionalLight.shadow.camera.top = 6;
+        directionalLight.shadow.camera.bottom = -6;
+        scene.add(directionalLight);
 
-        // --- 船舶容器 ---
-        const shipGroup = new THREE.Group();
-        scene.add(shipGroup);
-        
-        let shipData = {
-            baseY: 0,
-            draft: 0
+        const backLight = new THREE.PointLight(0x335577, 0.5);
+        backLight.position.set(-3, 2, -5);
+        scene.add(backLight);
+
+        const fillLight = new THREE.PointLight(0xbb7744, 0.5);
+        fillLight.position.set(3, 1, 4);
+        scene.add(fillLight);
+
+        const softFillLight = new THREE.PointLight(0x7788aa, 0.6);
+        softFillLight.position.set(0, 3, 0);
+        softFillLight.distance = 20;
+        scene.add(softFillLight);
+
+        const underLight = new THREE.PointLight(0x143355, 0.5);
+        underLight.position.set(0, -1, 0);
+        scene.add(underLight);
+
+        // ────────────────────────────────── 全局运行变量 ──────────────────────────────────
+        let boatModel = null;
+        let waterMesh = null;
+        let waveTime = 0;
+        let waterNormalOffset = 0;
+
+        let windSprites = [];
+        let windVelocities = [];
+        const WIND_DIR = new THREE.Vector3(0.7, 0, 0.7).normalize();
+
+        let wakeRipples = [];
+        const WAKE_THRESHOLD = 0.5;
+        const WAKE_INTERVAL = 0.12;
+        let lastWakeTime = 0;
+
+        // 海况配置 (三档)
+        const seaConfig = {
+            0: { name: "平静", waveAmp: 0.35, extraNoise: 0.0, rollFactor: 0.6, waterColor: 0x3a5a78, normalScale: 1.15, flowSpeed: 0.08, rippleSpeed: 0.25, windCount: 0, windIntensity: 0 },
+            1: { name: "有风", waveAmp: 1.4,  extraNoise: 0.2, rollFactor: 1.5, waterColor: 0x2e4e6a, normalScale: 1.3,  flowSpeed: 0.35, rippleSpeed: 0.8,  windCount: 30, windIntensity: 0.65 },
+            2: { name: "大浪", waveAmp: 2.8,  extraNoise: 0.45,rollFactor: 2.6, waterColor: 0x1e3a50, normalScale: 1.45, flowSpeed: 0.7,  rippleSpeed: 1.4,  windCount: 50, windIntensity: 1.2 }
         };
 
-        // 船舶运动状态
-        const shipState = {
-            speed: 0,
-            maxSpeed: 8.0,
-            acceleration: 12.0,
-            deceleration: 6.0,
-            turnSpeed: 1.2,
-            angularVelocity: 0,
-            angularDamping: 0.92,
-            heading: 0
+        let currentSeaState = 0;
+        let currentWaveAmp = seaConfig[0].waveAmp;
+        let currentExtraNoise = seaConfig[0].extraNoise;
+        let currentRollFactor = seaConfig[0].rollFactor;
+        let currentFlowSpeed = seaConfig[0].flowSpeed;
+        let currentRippleSpeed = seaConfig[0].rippleSpeed;
+
+        // 船体运动状态
+        let boatVelocity = 0;
+        let boatDirection = 0;
+        let boatAngularVel = 0;
+        const boatPosition = new THREE.Vector3(0, 0, 0);
+        const boatMaxSpeed = 4.0;
+        const boatAcc = 2.5;
+        const boatDec = 2.0;
+        const boatTurnSpeed = 1.5;
+
+        const keyState = {
+            w: false, s: false, a: false, d: false,
+            ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false
         };
 
-        // 键盘状态
-        const keys = {
-            w: false, a: false, s: false, d: false
-        };
+        // ────────────────────────────────── 辅助纹理与粒子 ──────────────────────────────────
+        function createWakeTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 64;
+            canvas.height = 64;
+            const ctx = canvas.getContext('2d');
+            const gradient = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+            gradient.addColorStop(0, 'rgba(160, 190, 220, 0.5)');
+            gradient.addColorStop(0.3, 'rgba(120, 150, 190, 0.3)');
+            gradient.addColorStop(0.6, 'rgba(80, 110, 150, 0.15)');
+            gradient.addColorStop(1, 'rgba(40, 60, 90, 0)');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, 64, 64);
+            return new THREE.CanvasTexture(canvas);
+        }
+        const wakeTexture = createWakeTexture();
 
-        const loadingOverlay = document.getElementById('loading-overlay');
-
-        function logToConsole(message, isError = false) {
-            if (isError) console.error(message);
-            else console.log(message);
+        function addWakeRipple(position) {
+            const material = new THREE.SpriteMaterial({
+                map: wakeTexture,
+                color: 0x7799bb,
+                transparent: true,
+                opacity: 0.45,
+                blending: THREE.AdditiveBlending,
+                depthWrite: false
+            });
+            const sprite = new THREE.Sprite(material);
+            sprite.position.copy(position);
+            sprite.position.y += 0.03;
+            sprite.scale.set(0.35, 0.35, 1);
+            scene.add(sprite);
+            wakeRipples.push({ sprite, life: 1.0, scale: 0.35, maxScale: 1.2 });
         }
 
-        // --- 波浪函数 ---
-        function getWaveHeight(x, z, time) {
-            const freq1 = 0.22, freq2 = 0.35;
-            const h1 = Math.sin(x * freq1 + time * 1.6) * Math.cos(z * 0.28 + time * 1.1);
-            const h2 = Math.sin(x * 0.45 + time * 1.8) * 0.4;
-            const h3 = Math.cos(z * 0.4 + time * 1.4) * 0.25;
-            return (h1 * 0.6 + h2 * 0.25 + h3 * 0.15) * 0.22;
-        }
-        
-        function getWaveSlope(x, z, time) {
-            const delta = 0.5;
-            const hx = getWaveHeight(x + delta, z, time) - getWaveHeight(x - delta, z, time);
-            const hz = getWaveHeight(x, z + delta, time) - getWaveHeight(x, z - delta, time);
-            return { dx: hx / (2*delta), dz: hz / (2*delta) };
-        }
-
-        // --- 键盘监听 ---
-        window.addEventListener('keydown', (e) => {
-            switch(e.code) {
-                case 'KeyW': keys.w = true; e.preventDefault(); break;
-                case 'KeyS': keys.s = true; e.preventDefault(); break;
-                case 'KeyA': keys.a = true; e.preventDefault(); break;
-                case 'KeyD': keys.d = true; e.preventDefault(); break;
-                default: break;
+        function updateWakeRipples(delta) {
+            for (let i = wakeRipples.length - 1; i >= 0; i--) {
+                const ripple = wakeRipples[i];
+                ripple.life -= delta * 1.5;
+                if (ripple.life <= 0) {
+                    scene.remove(ripple.sprite);
+                    ripple.sprite.material.dispose();
+                    wakeRipples.splice(i, 1);
+                    continue;
+                }
+                const t = 1 - ripple.life;
+                const newScale = ripple.scale + (ripple.maxScale - ripple.scale) * t;
+                ripple.sprite.scale.set(newScale, newScale, 1);
+                ripple.sprite.material.opacity = 0.45 * ripple.life;
+                ripple.sprite.position.y += delta * 0.25;
             }
-        });
-        window.addEventListener('keyup', (e) => {
-            switch(e.code) {
-                case 'KeyW': keys.w = false; e.preventDefault(); break;
-                case 'KeyS': keys.s = false; e.preventDefault(); break;
-                case 'KeyA': keys.a = false; e.preventDefault(); break;
-                case 'KeyD': keys.d = false; e.preventDefault(); break;
-                default: break;
-            }
-        });
-        window.addEventListener('contextmenu', e => e.preventDefault());
+        }
 
-        // --- 加载模型 ---
-        function loadShipModel() {
-            const objPath = './ship.obj';
-            const mtlPath = './ship.mtl';
-            
-            logToConsole('⏳ 正在加载模型...');
-            
-            const mtlLoader = new MTLLoader();
-            mtlLoader.setResourcePath('./');
-            
-            mtlLoader.load(mtlPath, 
-                (materials) => {
-                    materials.preload();
-                    const objLoader = new OBJLoader();
-                    objLoader.setMaterials(materials);
-                    objLoader.load(objPath, processModel, undefined, fallbackLoadObj);
+        function createWindTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 128;
+            canvas.height = 32;
+            const ctx = canvas.getContext('2d');
+            const gradient = ctx.createLinearGradient(0, 16, 128, 16);
+            gradient.addColorStop(0, 'rgba(180,200,220,0)');
+            gradient.addColorStop(0.2, 'rgba(180,200,220,0.4)');
+            gradient.addColorStop(0.5, 'rgba(200,220,240,0.6)');
+            gradient.addColorStop(0.8, 'rgba(180,200,220,0.4)');
+            gradient.addColorStop(1, 'rgba(180,200,220,0)');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 8, 128, 16);
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        function createWindSprites(count) {
+            const texture = createWindTexture();
+            const sprites = [];
+            const velocities = [];
+            const rangeX = 30, rangeZ = 30;
+            for (let i = 0; i < count; i++) {
+                const material = new THREE.SpriteMaterial({
+                    map: texture,
+                    color: 0xd8e8f8,
+                    transparent: true,
+                    opacity: 0.35,
+                    blending: THREE.AdditiveBlending,
+                    depthWrite: false
+                });
+                const sprite = new THREE.Sprite(material);
+                sprite.scale.set(0.18 + Math.random() * 0.12, 0.06 + Math.random() * 0.05, 1);
+                sprite.position.set(
+                    (Math.random() - 0.5) * rangeX,
+                    1.0 + Math.random() * 3.5,
+                    (Math.random() - 0.5) * rangeZ
+                );
+                scene.add(sprite);
+                sprites.push(sprite);
+                velocities.push(0.8 + Math.random() * 1.2);
+            }
+            return { sprites, velocities, rangeX, rangeZ };
+        }
+
+        function updateWindSpritesCount(targetCount) {
+            windSprites.forEach(s => { scene.remove(s); s.material.dispose(); });
+            windSprites = [];
+            windVelocities = [];
+            if (targetCount === 0) return;
+            const result = createWindSprites(targetCount);
+            windSprites = result.sprites;
+            windVelocities = result.velocities;
+        }
+
+        function updateWindIntensity(intensity) {
+            windSprites.forEach(sprite => {
+                sprite.material.opacity = 0.2 + intensity * 0.4;
+            });
+        }
+
+        function updateWindParticles(delta, intensity) {
+            if (intensity <= 0 || windSprites.length === 0) return;
+            const speed = 7.5 * intensity;
+            const moveX = WIND_DIR.x * delta * speed;
+            const moveZ = WIND_DIR.z * delta * speed;
+            const rangeX = 30, rangeZ = 30;
+            for (let i = 0; i < windSprites.length; i++) {
+                const s = windSprites[i];
+                s.position.x += moveX * windVelocities[i];
+                s.position.z += moveZ * windVelocities[i];
+                if (Math.abs(s.position.x) > rangeX / 2) s.position.x = -Math.sign(s.position.x) * rangeX / 2;
+                if (Math.abs(s.position.z) > rangeZ / 2) s.position.z = -Math.sign(s.position.z) * rangeZ / 2;
+            }
+        }
+
+        // ────────────────────────────────── 波浪计算 ──────────────────────────────────
+        function getWaveHeight(x, z, t) {
+            const swell = Math.sin(x * 0.33 + t * 0.65) * Math.cos(z * 0.28) * 0.2;
+            const w1 = Math.sin(x * 0.55 + t) * Math.cos(z * 0.38 + t * 0.65);
+            const w2 = Math.sin(x * 1.1 - t * 1.2) * 0.55;
+            const w3 = Math.sin(z * 1.4 + t * 1.0) * 0.45;
+            const w4 = Math.sin((x * 0.85 + z * 0.65) * 1.7 + t * 1.8) * 0.3;
+            let h = (swell + w1 * 0.25 + w2 * 0.2 + w3 * 0.2 + w4 * 0.15) * 0.4 * currentWaveAmp;
+            if (currentExtraNoise > 0.1) {
+                h += Math.sin(x * 3.3 + t * 7.5) * Math.cos(z * 2.6) * 0.12 * currentExtraNoise;
+            }
+            return Math.min(1.35, Math.max(-1.15, h));
+        }
+
+        // ────────────────────────────────── 动态水面 (固定世界原点，尺寸加大) ──────────────────────────────────
+        function createDynamicWater() {
+            const size = 100;          // 扩大至 100x100，更广视野
+            const segments = 180;
+            const geometry = new THREE.PlaneGeometry(size, size, segments, segments);
+            geometry.rotateX(-Math.PI / 2);
+
+            const textureLoader = new THREE.TextureLoader();
+            const waterNormals = textureLoader.load('https://threejs.org/examples/textures/waternormals.jpg');
+            waterNormals.wrapS = THREE.RepeatWrapping;
+            waterNormals.wrapT = THREE.RepeatWrapping;
+            waterNormals.repeat.set(10, 10);
+
+            const flowMap = textureLoader.load('https://threejs.org/examples/textures/waternormals.jpg');
+            flowMap.wrapS = THREE.RepeatWrapping;
+            flowMap.wrapT = THREE.RepeatWrapping;
+            flowMap.repeat.set(5, 5);
+
+            const material = new THREE.MeshPhysicalMaterial({
+                color: 0x2e4e6a,
+                emissive: 0x000a14,
+                metalness: 0.95,
+                roughness: 0.22,
+                clearcoat: 1.0,
+                clearcoatRoughness: 0.12,
+                reflectivity: 0.4,
+                transparent: true,
+                opacity: 0.9,
+                side: THREE.DoubleSide,
+                normalMap: waterNormals,
+                normalScale: new THREE.Vector2(1.3, 1.3),
+                envMapIntensity: 0.9,
+                emissiveMap: flowMap,
+                emissiveIntensity: 0.15
+            });
+
+            const water = new THREE.Mesh(geometry, material);
+            water.receiveShadow = true;
+            water.castShadow = false;
+            water.position.set(0, 0, 0);   // 固定在世界原点，不再跟随相机移动
+            water.userData = { size, segments, normalMap: waterNormals, flowMap: flowMap };
+            scene.add(water);
+            return water;
+        }
+
+        function updateWaterVertices(mesh, t) {
+            const geo = mesh.geometry;
+            const pos = geo.attributes.position.array;
+            const seg = mesh.userData.segments;
+            const size = mesh.userData.size;
+            const step = size / seg;
+            const half = size / 2;
+            let idx = 0;
+            for (let i = 0; i <= seg; i++) {
+                const z = -half + i * step;
+                for (let j = 0; j <= seg; j++) {
+                    const x = -half + j * step;
+                    pos[idx + 1] = getWaveHeight(x, z, t);
+                    idx += 3;
+                }
+            }
+            geo.attributes.position.needsUpdate = true;
+            geo.computeVertexNormals();
+        }
+
+        function updateWaterTextureFlow(mesh, delta, speed) {
+            const normMap = mesh.userData.normalMap;
+            const flowMap = mesh.userData.flowMap;
+            waterNormalOffset += delta * speed;
+            if (normMap) {
+                normMap.offset.x = waterNormalOffset * 0.3;
+                normMap.offset.y = waterNormalOffset * 0.2;
+            }
+            if (flowMap) {
+                flowMap.offset.x = -waterNormalOffset * 0.18;
+                flowMap.offset.y = waterNormalOffset * 0.25;
+            }
+        }
+
+        function updateWaterMaterial(conf) {
+            if (!waterMesh) return;
+            waterMesh.material.color.setHex(conf.waterColor);
+            waterMesh.material.roughness = conf.waveAmp > 2 ? 0.3 : (conf.waveAmp > 1 ? 0.25 : 0.2);
+            waterMesh.material.normalScale.set(conf.normalScale, conf.normalScale);
+            waterMesh.material.opacity = conf.waveAmp > 2 ? 0.87 : 0.9;
+            waterMesh.material.emissiveIntensity = conf.waveAmp > 2 ? 0.25 : 0.12;
+        }
+
+        // ────────────────────────────────── 海况切换 ──────────────────────────────────
+        function setSeaState(level) {
+            currentSeaState = level;
+            const cfg = seaConfig[level];
+            currentWaveAmp = cfg.waveAmp;
+            currentExtraNoise = cfg.extraNoise;
+            currentRollFactor = cfg.rollFactor;
+            currentFlowSpeed = cfg.flowSpeed;
+            currentRippleSpeed = cfg.rippleSpeed;
+
+            updateWaterMaterial(cfg);
+            updateWindSpritesCount(cfg.windCount);
+            updateWindIntensity(cfg.windIntensity);
+
+            // 根据海况微调主光源
+            directionalLight.intensity = 1.1 - level * 0.2;
+            ambientLight.intensity = 1.0 - level * 0.1;
+
+            document.querySelectorAll('.wave-btn').forEach((btn, idx) => {
+                btn.classList.toggle('active', idx === level);
+            });
+        }
+
+        // ────────────────────────────────── 键盘控制 ──────────────────────────────────
+        function initKeyboard() {
+            window.addEventListener('keydown', e => {
+                if (e.key in keyState) {
+                    keyState[e.key] = true;
+                    e.preventDefault();
+                }
+            });
+            window.addEventListener('keyup', e => {
+                if (e.key in keyState) {
+                    keyState[e.key] = false;
+                    e.preventDefault();
+                }
+            });
+        }
+
+        // ────────────────────────────────── 天空盒 ──────────────────────────────────
+        const cubeTextureLoader = new THREE.CubeTextureLoader();
+        cubeTextureLoader.setPath('./public/textures/skybox/');
+        cubeTextureLoader.load(
+            ['right.png', 'left.png', 'top.png', 'down.png', 'back.png', 'front.png'],
+            texture => {
+                scene.background = texture;
+                scene.environment = texture;
+            },
+            undefined,
+            () => console.warn('天空盒未找到，保持默认暗色背景')
+        );
+
+        // ────────────────────────────────── 船舶模型加载 ──────────────────────────────────
+        function loadBoat() {
+            const loader = new OBJLoader();
+            loader.load(
+                './ship.obj',
+                object => {
+                    object.scale.set(0.4, 0.4, 0.4);
+                    object.traverse(child => {
+                        if (child.isMesh) {
+                            child.castShadow = true;
+                            child.receiveShadow = false;
+                            child.material = new THREE.MeshStandardMaterial({
+                                color: 0xdddddd,
+                                metalness: 0.85,
+                                roughness: 0.3,
+                                emissive: 0x111111,
+                                envMapIntensity: 0.9
+                            });
+                        }
+                    });
+                    // 将模型底部准确对齐到 y=0
+                    const box = new THREE.Box3().setFromObject(object);
+                    object.position.y = -box.min.y;
+                    scene.add(object);
+                    boatModel = object;
+                    boatPosition.set(0, 0, 0);
+                    controls.target.copy(boatPosition);
                 },
                 undefined,
-                fallbackLoadObj
+                err => console.error('船模加载失败:', err)
             );
         }
-        
-        function fallbackLoadObj() {
-            const objLoader = new OBJLoader();
-            objLoader.load('./ship.obj', processModel, undefined, (error) => {
-                console.error('OBJ加载彻底失败:', error);
-                loadingOverlay.classList.add('hidden');
-            });
-        }
-        
-        function processModel(object) {
-            while(shipGroup.children.length) shipGroup.remove(shipGroup.children[0]);
-            
-            const box = new THREE.Box3().setFromObject(object);
-            const size = box.getSize(new THREE.Vector3());
-            const center = box.getCenter(new THREE.Vector3());
-            const minY = box.min.y;
-            
-            const maxDim = Math.max(size.x, size.y, size.z);
-            let scale = 1.0;
-            if (maxDim > 18) scale = 10 / maxDim;
-            else if (maxDim < 4) scale = 6 / maxDim;
-            
-            object.scale.set(scale, scale, scale);
-            object.updateWorldMatrix(true, true);
-            const scaledBox = new THREE.Box3().setFromObject(object);
-            const scaledMinY = scaledBox.min.y;
-            const modelHeight = scaledBox.getSize(new THREE.Vector3()).y;
-            
-            const draftDepth = modelHeight * 0.22;
-            const shipBaseY = -scaledMinY - draftDepth;
-            
-            object.position.x = -center.x * scale;
-            object.position.z = -center.z * scale;
-            object.position.y = 0;
-            
-            object.traverse((child) => {
-                if (child.isMesh) {
-                    child.castShadow = true;
-                    child.receiveShadow = true;
-                    if (child.material) {
-                        const mats = Array.isArray(child.material) ? child.material : [child.material];
-                        mats.forEach(mat => {
-                            mat.roughness = mat.roughness || 0.5;
-                            mat.metalness = mat.metalness || 0.1;
-                        });
-                    }
-                }
-            });
-            
-            shipGroup.add(object);
-            shipGroup.position.y = shipBaseY;
-            shipGroup.position.x = 0;
-            shipGroup.position.z = 0;
-            
-            shipData.baseY = shipBaseY;
-            shipData.draft = draftDepth;
-            
-            shipState.heading = 0;
-            shipGroup.rotation.y = shipState.heading;
-            
-            loadingOverlay.classList.add('hidden');
-            logToConsole(`⛵ 船舶已就绪 · 吃水 ${draftDepth.toFixed(2)}`);
-        }
 
-        loadShipModel();
+        // ────────────────────────────────── 动画循环 ──────────────────────────────────
+        let lastTimestamp = performance.now();
 
-        // --- 船舶运动更新（已调换 W/S 的推力方向）---
-        function updateShipMovement(deltaTime) {
-            if (!shipGroup.children.length) return;
-            
-            const state = shipState;
-            
-            // 修改点：W 后退（负推力），S 前进（正推力）
-            let thrust = 0;
-            if (keys.w) thrust -= 1;   // 原为 += 1，现改为 -= 1
-            if (keys.s) thrust += 1;   // 原为 -= 1，现改为 += 1
-            
-            if (thrust !== 0) {
-                state.speed += thrust * state.acceleration * deltaTime;
-            } else {
-                if (Math.abs(state.speed) > 0.01) {
-                    state.speed -= Math.sign(state.speed) * state.deceleration * deltaTime;
-                } else {
-                    state.speed = 0;
-                }
-            }
-            state.speed = Math.max(-state.maxSpeed * 0.5, Math.min(state.maxSpeed, state.speed));
-            
-            let turnInput = 0;
-            if (keys.a) turnInput += 1;
-            if (keys.d) turnInput -= 1;
-            
-            if (turnInput !== 0) {
-                state.angularVelocity += turnInput * state.turnSpeed * deltaTime * 1.5;
-            }
-            
-            state.angularVelocity *= state.angularDamping;
-            if (Math.abs(state.angularVelocity) < 0.001) state.angularVelocity = 0;
-            
-            state.heading += state.angularVelocity * deltaTime * 2.5;
-            
-            const moveDir = new THREE.Vector3(Math.sin(state.heading), 0, Math.cos(state.heading));
-            const deltaPos = moveDir.clone().multiplyScalar(state.speed * deltaTime);
-            shipGroup.position.x += deltaPos.x;
-            shipGroup.position.z += deltaPos.z;
-            
-            shipGroup.rotation.y = state.heading;
-            
-            controls.target.copy(shipGroup.position).add(new THREE.Vector3(0, 1.5, 0));
-        }
-
-        // --- 动画循环 ---
-        const clock = new THREE.Clock();
-        
         function animate() {
-            const delta = Math.min(clock.getDelta(), 0.1);
-            const elapsedTime = performance.now() * 0.001;
-            
-            if (water.material.uniforms) {
-                water.material.uniforms['time'].value = elapsedTime * 1.4;
+            const now = performance.now();
+            const delta = Math.min(0.05, (now - lastTimestamp) / 1000);
+            lastTimestamp = now;
+
+            waveTime += delta * 1.5;
+
+            // 波浪顶点更新 (水面固定原点，无需平移)
+            updateWaterVertices(waterMesh, waveTime);
+            updateWaterTextureFlow(waterMesh, delta, currentFlowSpeed);
+
+            // ── 船体运动 (W前进 / S后退) ──
+            let thrust = 0;
+            if (keyState.w || keyState.ArrowUp) thrust = -1;
+            if (keyState.s || keyState.ArrowDown) thrust = 1;
+            let turn = 0;
+            if (keyState.a || keyState.ArrowLeft) turn = 1;
+            if (keyState.d || keyState.ArrowRight) turn = -1;
+
+            if (thrust !== 0) {
+                boatVelocity += thrust * boatAcc * delta;
+                boatVelocity = Math.min(boatMaxSpeed, Math.max(-boatMaxSpeed * 0.6, boatVelocity));
+            } else {
+                if (Math.abs(boatVelocity) < boatDec * delta) boatVelocity = 0;
+                else boatVelocity -= Math.sign(boatVelocity) * boatDec * delta;
             }
-            
-            updateShipMovement(delta);
-            
-            if (shipGroup.children.length > 0) {
-                const time = elapsedTime * 1.4;
-                const posX = shipGroup.position.x;
-                const posZ = shipGroup.position.z;
-                
-                const waveY = getWaveHeight(posX, posZ, time);
-                const slope = getWaveSlope(posX, posZ, time);
-                
-                shipGroup.position.y = shipData.baseY + waveY;
-                
-                const rollAngle = slope.dz * 0.4;
-                const pitchAngle = -slope.dx * 0.35;
-                
-                const maxRot = 0.08;
-                shipGroup.rotation.x = Math.max(-maxRot, Math.min(maxRot, pitchAngle));
-                shipGroup.rotation.z = Math.max(-maxRot, Math.min(maxRot, rollAngle));
+
+            const turnFactor = Math.max(0.25, 1 - Math.abs(boatVelocity) / boatMaxSpeed);
+            boatAngularVel = turn * boatTurnSpeed * turnFactor * delta;
+            boatDirection += boatAngularVel;
+
+            const moveDist = boatVelocity * delta;
+            boatPosition.x += Math.sin(boatDirection) * moveDist;
+            boatPosition.z += Math.cos(boatDirection) * moveDist;
+
+            // 活动范围限制在水面网格内
+            const boundary = 40;
+            boatPosition.x = Math.min(boundary, Math.max(-boundary, boatPosition.x));
+            boatPosition.z = Math.min(boundary, Math.max(-boundary, boatPosition.z));
+
+            if (boatModel) {
+                boatModel.position.copy(boatPosition);
+                boatModel.rotation.y = boatDirection;
+
+                // 船底精确贴合波浪表面，并加极微小浮力偏移
+                const waveY = getWaveHeight(boatPosition.x, boatPosition.z, waveTime);
+                boatModel.position.y = waveY + 0.03;   // 船底高于水面3厘米
+
+                // 横摇与纵摇 (大浪时更剧烈)
+                const off = 0.3;
+                const leftY = getWaveHeight(boatPosition.x - off, boatPosition.z, waveTime);
+                const rightY = getWaveHeight(boatPosition.x + off, boatPosition.z, waveTime);
+                const frontY = getWaveHeight(boatPosition.x, boatPosition.z + off, waveTime);
+                const backY = getWaveHeight(boatPosition.x, boatPosition.z - off, waveTime);
+
+                const rollWave = (leftY - rightY) * 0.45 * currentRollFactor;
+                const pitchWave = (frontY - backY) * 0.35 * currentRollFactor;
+                const rollTurn = -turn * Math.abs(boatVelocity) * 0.06;
+                const pitchThrust = thrust * 0.04;
+
+                boatModel.rotation.x = pitchWave + pitchThrust;
+                boatModel.rotation.z = rollWave + rollTurn;
             }
-            
+
+            // 船头波纹
+            if (Math.abs(boatVelocity) > WAKE_THRESHOLD && boatModel) {
+                if (now - lastWakeTime > WAKE_INTERVAL * 1000) {
+                    const dirX = Math.sin(boatDirection);
+                    const dirZ = Math.cos(boatDirection);
+                    const bx = boatPosition.x + dirX * 0.7;
+                    const bz = boatPosition.z + dirZ * 0.7;
+                    addWakeRipple(new THREE.Vector3(bx, getWaveHeight(bx, bz, waveTime) + 0.02, bz));
+                    lastWakeTime = now;
+                }
+            }
+            updateWakeRipples(delta);
+
+            // 风粒子
+            updateWindParticles(delta, seaConfig[currentSeaState].windIntensity);
+
+            controls.target.lerp(boatPosition, 0.15);
             controls.update();
             renderer.render(scene, camera);
             requestAnimationFrame(animate);
         }
-        
+
+        // ────────────────────────────────── 启动 ──────────────────────────────────
+        waterMesh = createDynamicWater();
+        initKeyboard();
+        // 按钮事件绑定
+        document.querySelectorAll('.wave-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const level = parseInt(btn.getAttribute('data-level'));
+                setSeaState(level);
+            });
+        });
+        setSeaState(0);
+        loadBoat();
         animate();
 
         window.addEventListener('resize', () => {
